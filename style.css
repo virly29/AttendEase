@@ -1,0 +1,110 @@
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f4f3fb;
+    color: #25243b;
+}
+
+header {
+    background: #6558d9;
+    color: white;
+    text-align: center;
+    padding: 25px;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 30px;
+}
+
+header p {
+    margin-bottom: 0;
+}
+
+main {
+    max-width: 900px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+.card {
+    background: white;
+    padding: 25px;
+    margin-bottom: 22px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+h2 {
+    color: #6558d9;
+    font-size: 20px;
+    margin-top: 0;
+}
+
+form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+input,
+select,
+button {
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 7px;
+    font-size: 14px;
+}
+
+input,
+select {
+    flex: 1;
+    min-width: 150px;
+}
+
+button {
+    background: #6558d9;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #5145c4;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    background: white;
+}
+
+th,
+td {
+    padding: 13px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+th {
+    background: #efedff;
+    color: #5145c4;
+}
+
+@media (max-width: 600px) {
+    form {
+        flex-direction: column;
+    }
+
+    input,
+    select,
+    button {
+        width: 100%;
+    }
+}

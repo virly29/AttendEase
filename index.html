@@ -1,0 +1,71 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AttendEase - Absensi Siswa</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>AttendEase</h1>
+        <p>Aplikasi Absensi Siswa</p>
+    </header>
+
+    <main>
+        <section class="card">
+            <h2>Tambah Data Siswa</h2>
+
+            <form id="formSiswa">
+                <input
+                    type="text"
+                    id="namaSiswa"
+                    placeholder="Masukkan nama siswa"
+                    required
+                >
+                <button type="submit">Tambah Siswa</button>
+            </form>
+        </section>
+
+        <section class="card">
+            <h2>Catat Absensi</h2>
+
+            <form id="formAbsensi">
+                <select id="pilihSiswa" required>
+                    <option value="">Pilih nama siswa</option>
+                </select>
+
+                <input type="date" id="tanggal" required>
+
+                <select id="status">
+                    <option value="Hadir">Hadir</option>
+                    <option value="Izin">Izin</option>
+                    <option value="Sakit">Sakit</option>
+                    <option value="Alfa">Alfa</option>
+                </select>
+
+                <button type="submit">Simpan Absensi</button>
+            </form>
+        </section>
+
+        <section class="card">
+            <h2>Daftar Absensi</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nama</th>
+                        <th>Tanggal</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="daftarAbsensi"></tbody>
+            </table>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>

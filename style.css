@@ -1,4 +1,3 @@
-
 * {
     box-sizing: border-box;
 }
@@ -6,105 +5,179 @@
 body {
     margin: 0;
     font-family: Arial, sans-serif;
-    background: #f4f3fb;
-    color: #25243b;
+    background: #f3f4f8;
+    color: #25243a;
 }
 
-header {
-    background: #6558d9;
+.header {
+    background: #5946c7;
     color: white;
     text-align: center;
-    padding: 25px;
+    padding: 30px 15px;
 }
 
-header h1 {
+.header h1 {
+    margin: 0 0 10px;
+}
+
+.header p {
     margin: 0;
-    font-size: 30px;
 }
 
-header p {
-    margin-bottom: 0;
-}
-
-main {
-    max-width: 900px;
-    margin: 30px auto;
-    padding: 0 20px;
+.container {
+    width: 92%;
+    max-width: 1100px;
+    margin: 25px auto;
 }
 
 .card {
     background: white;
-    padding: 25px;
-    margin-bottom: 22px;
+    padding: 24px;
+    margin-bottom: 25px;
     border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
 }
 
-h2 {
-    color: #6558d9;
-    font-size: 20px;
+.card h2 {
     margin-top: 0;
+    color: #5946c7;
 }
 
-form {
+label {
+    display: block;
+    margin: 16px 0 7px;
+    font-weight: bold;
+}
+
+input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #d5d5e0;
+    border-radius: 7px;
+    font-size: 15px;
+}
+
+input:focus {
+    outline: 2px solid #b7adff;
+    border-color: #5946c7;
+}
+
+.signature-box {
+    width: 100%;
+    height: 180px;
+    border: 2px dashed #a9a3c9;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+}
+
+#signatureCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+    cursor: crosshair;
+}
+
+.hint {
+    color: #777;
+    font-size: 13px;
+}
+
+.button-group {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
-}
-
-input,
-select,
-button {
-    padding: 12px;
-    border: 1px solid #ddd;
-    border-radius: 7px;
-    font-size: 14px;
-}
-
-input,
-select {
-    flex: 1;
-    min-width: 150px;
+    gap: 10px;
+    margin-top: 18px;
 }
 
 button {
-    background: #6558d9;
-    color: white;
+    padding: 12px 18px;
     border: none;
+    border-radius: 7px;
     cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.btn-reset {
+    background: #e8e6f1;
+    color: #37334f;
+}
+
+.btn-save {
+    background: #5946c7;
+    color: white;
 }
 
 button:hover {
-    background: #5145c4;
+    opacity: 0.85;
+}
+
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    margin-top: 15px;
 }
 
 table {
     width: 100%;
+    min-width: 700px;
     border-collapse: collapse;
-    margin-top: 15px;
-    background: white;
 }
 
 th,
 td {
-    padding: 13px;
+    padding: 12px;
+    border: 1px solid #e2e2eb;
     text-align: left;
-    border-bottom: 1px solid #eee;
+    font-size: 14px;
 }
 
 th {
-    background: #efedff;
-    color: #5145c4;
+    background: #5946c7;
+    color: white;
+}
+
+.signature-image {
+    width: 100px;
+    height: 50px;
+    object-fit: contain;
+    border: 1px solid #ddd;
+    background: white;
+}
+
+.btn-delete {
+    background: #dc3545;
+    color: white;
+    padding: 8px 10px;
+}
+
+#jumlahPeserta {
+    font-weight: bold;
+    margin-bottom: 0;
+}
+
+footer {
+    text-align: center;
+    color: #777;
+    padding: 15px;
 }
 
 @media (max-width: 600px) {
-    form {
-        flex-direction: column;
+    .container {
+        width: 95%;
     }
 
-    input,
-    select,
-    button {
-        width: 100%;
+    .card {
+        padding: 16px;
+    }
+
+    .header h1 {
+        font-size: 24px;
+    }
+
+    .button-group button {
+        flex: 1;
     }
 }

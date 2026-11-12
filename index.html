@@ -1,105 +1,218 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Presensi Webinar</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AttendEase | Absensi Sekolah</title>
+<link rel="stylesheet" href="style.css">
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 </head>
+
 <body>
-    <header class="header">
-        <h1>Presensi Webinar</h1>
-        <p>Formulir kehadiran peserta dengan tanda tangan digital</p>
-    </header>
 
-    <main class="container">
-        <section class="card">
-            <h2>Formulir Presensi</h2>
+<header>
+  <div class="logo">A</div>
+  <div>
+    <h2>AttendEase</h2>
+    <p>Student Attendance System</p>
+  </div>
+</header>
 
-            <form id="presensiForm">
-                <label for="namaWebinar">Nama Webinar</label>
-                <input
-                    type="text"
-                    id="namaWebinar"
-                    placeholder="Contoh: Seminar Teknologi Digital"
-                    required
-                >
+<main class="container">
 
-                <label for="tanggal">Tanggal Webinar</label>
-                <input type="date" id="tanggal" required>
+<section class="hero">
+  <h1>Absensi Jadi Lebih Mudah.</h1>
+  <p>Kelola kehadiran siswa dan presensi praktikum dalam satu tempat.</p>
+</section>
 
-                <label for="nama">Nama Lengkap Peserta</label>
-                <input
-                    type="text"
-                    id="nama"
-                    placeholder="Masukkan nama lengkap"
-                    required
-                >
+<section class="stats">
+  <div class="stat hadir"><p>Hadir</p><h2 id="statHadir">0</h2></div>
+  <div class="stat izin"><p>Izin</p><h2 id="statIzin">0</h2></div>
+  <div class="stat sakit"><p>Sakit</p><h2 id="statSakit">0</h2></div>
+  <div class="stat alpa"><p>Alpa</p><h2 id="statAlpa">0</h2></div>
+</section>
 
-                <label for="sekolah">Asal Sekolah / Instansi</label>
-                <input
-                    type="text"
-                    id="sekolah"
-                    placeholder="Masukkan asal sekolah"
-                    required
-                >
+<nav class="tabs">
+  <button class="tab active" data-tab="absensi">Absensi Harian</button>
+  <button class="tab" data-tab="praktikum">Presensi Praktikum</button>
+</nav>
 
-                <label>Tanda Tangan Peserta</label>
-                <div class="signature-box">
-                    <canvas id="signatureCanvas"></canvas>
-                </div>
+<!-- ABSENSI HARIAN -->
+<section id="absensi" class="panel">
 
-                <p class="hint">
-                    Bubuhkan tanda tangan menggunakan mouse
-                    atau layar sentuh.
-                </p>
+<h2>Absensi Harian Siswa</h2>
+<p class="subtitle">Catat kehadiran siswa setiap hari.</p>
 
-                <div class="button-group">
-                    <button type="button" id="hapusTTD" class="btn-reset">
-                        Hapus TTD
-                    </button>
+<form id="attendanceForm">
+<div class="form-grid">
 
-                    <button type="submit" class="btn-save">
-                        Simpan Presensi
-                    </button>
-                </div>
-            </form>
-        </section>
+<div>
+<label>Nama Siswa</label>
+<input id="studentName" required placeholder="Nama lengkap siswa">
+</div>
 
-        <section class="card">
-            <h2>Daftar Kehadiran</h2>
+<div>
+<label>Kelas</label>
+<input id="studentClass" required placeholder="Contoh: XI TKJ 2">
+</div>
 
-            <input
-                type="search"
-                id="pencarian"
-                placeholder="Cari nama peserta..."
-                aria-label="Cari nama peserta"
-            >
+<div>
+<label>Tanggal</label>
+<input type="date" id="attendanceDate" required>
+</div>
 
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>No.</th>
-                            <th>Nama Peserta</th>
-                            <th>Asal Sekolah</th>
-                            <th>Tanggal</th>
-                            <th>Tanda Tangan</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="daftarPresensi"></tbody>
-                </table>
-            </div>
+<div>
+<label>Status Kehadiran</label>
+<select id="attendanceStatus">
+<option>Hadir</option>
+<option>Izin</option>
+<option>Sakit</option>
+<option>Alpa</option>
+</select>
+</div>
 
-            <p id="jumlahPeserta">Total peserta: 0</p>
-        </section>
-    </main>
+<div class="full">
+<label>Keterangan</label>
+<input id="attendanceNote" placeholder="Keterangan tambahan">
+</div>
 
-    <footer>
-        <p>&copy; 2026 Presensi Webinar</p>
-    </footer>
+</div>
+<button class="btn primary">+ Simpan Absensi</button>
+</form>
 
-    <script src="script.js"></script>
+<hr>
+
+<div class="toolbar">
+<h3>Data Absensi Siswa</h3>
+<input id="searchAttendance" placeholder="Cari nama siswa">
+<input type="date" id="filterDate">
+<button class="btn secondary" id="clearDate">Semua Tanggal</button>
+</div>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>No</th><th>Nama Siswa</th><th>Kelas</th>
+<th>Tanggal</th><th>Status</th><th>Keterangan</th><th>Aksi</th>
+</tr>
+</thead>
+<tbody id="attendanceTable"></tbody>
+</table>
+</div>
+
+<div class="export">
+<button class="btn excel" id="exportAttendanceExcel">Export Excel</button>
+<button class="btn pdf" id="exportAttendancePdf">Export PDF</button>
+</div>
+
+</section>
+
+<!-- PRESENSI PRAKTIKUM -->
+<section id="praktikum" class="panel hidden">
+
+<h2>Presensi Praktikum</h2>
+<p class="subtitle">Catat kehadiran siswa dalam kegiatan praktikum.</p>
+
+<form id="praktikumForm">
+
+<div class="form-grid">
+
+<div>
+<label>Nama Siswa</label>
+<input id="praktikumName" required placeholder="Nama lengkap siswa">
+</div>
+
+<div>
+<label>Kelas</label>
+<input id="praktikumClass" required placeholder="Contoh: XI TKJ 2">
+</div>
+
+<div>
+  <label>Mata Pelajaran</label>
+  <select id="praktikumMapel" required>
+    <option value="">-- Pilih Mata Pelajaran --</option>
+    <option value="ASJ">ASJ (Administrasi Sistem Jaringan)</option>
+    <option value="AIJ">AIJ (Administrasi Infrastruktur Jaringan)</option>
+    <option value="TLJ">TLJ (Teknologi Layanan Jaringan)</option>
+    <option value="Pemrograman">Pemrograman</option>
+  </select>
+</div>
+
+
+<div>
+<label>Nama Praktikum</label>
+<input id="praktikumTitle" required placeholder="Contoh: Membuat Website">
+</div>
+
+<div>
+<label>Tanggal Praktikum</label>
+<input type="date" id="praktikumDate" required>
+</div>
+
+<div>
+<label>Status Kehadiran</label>
+<select id="praktikumStatus">
+<option>Hadir</option>
+<option>Izin</option>
+<option>Sakit</option>
+<option>Alpa</option>
+</select>
+</div>
+
+<div class="full">
+<label>Tanda Tangan Siswa (TTD)</label>
+<p class="hint">Tanda tangan menggunakan mouse atau layar sentuh.</p>
+
+<div class="signature-box">
+<canvas id="signatureCanvas"></canvas>
+</div>
+
+<button type="button" class="btn secondary" id="clearSignature">
+Hapus TTD
+</button>
+</div>
+
+</div>
+
+<button class="btn primary">+ Simpan Presensi Praktikum</button>
+</form>
+
+<hr>
+
+<div class="toolbar">
+<h3>Data Presensi Praktikum</h3>
+<input id="searchPraktikum" placeholder="Cari nama siswa">
+</div>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>No</th><th>Nama Siswa</th><th>Kelas</th>
+<th>Mata Pelajaran</th><th>Praktikum</th>
+<th>Tanggal</th><th>Status</th><th>TTD</th><th>Aksi</th>
+</tr>
+</thead>
+<tbody id="praktikumTable"></tbody>
+</table>
+</div>
+
+<div class="export">
+<button class="btn excel" id="exportPraktikumExcel">Export Excel</button>
+<button class="btn pdf" id="exportPraktikumPdf">Export PDF</button>
+</div>
+
+</section>
+
+</main>
+
+<footer>© 2026 AttendEase | Student Attendance System</footer>
+
+<script src="script.js"></script>
 </body>
 </html>

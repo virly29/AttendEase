@@ -1,233 +1,382 @@
-const form = document.getElementById("presensiForm");
-const namaWebinar = document.getElementById("namaWebinar");
-const tanggal = document.getElementById("tanggal");
-const nama = document.getElementById("nama");
-const sekolah = document.getElementById("sekolah");
 
-const canvas = document.getElementById("signatureCanvas");
+const $ = id => document.getElementById(id);
+
+let attendance = JSON.parse(localStorage.getItem("attendance")) || [];
+let praktikum = JSON.parse(localStorage.getItem("praktikum")) || [];
+
+const today = new Date().toISOString().slice(0,10);
+
+$("attendanceDate").value = today;
+$("praktikumDate").value = today;
+
+// SIMPAN DATA
+function saveData() {
+  localStorage.setItem("attendance", JSON.stringify(attendance));
+  localStorage.setItem("praktikum", JSON.stringify(praktikum));
+}
+
+// AMANKAN TEKS
+function safe(text) {
+  return String(text ?? "").replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",
+    '"':"&quot;","'":"&#39;"
+  }[c]));
+}
+
+// STATISTIK
+function updateStats() {
+  ["Hadir","Izin","Sakit","Alpa"].forEach(status => {
+    $("stat"+status).textContent =
+      attendance.filter(x => x.status === status).length;
+  });
+}
+
+// ABSENSI HARIAN
+function renderAttendance() {
+  const search = $("searchAttendance").value.toLowerCase();
+  const date = $("filterDate").value;
+
+  const data = attendance.filter(x =>
+    (x.name.toLowerCase().includes(search) ||
+     x.className.toLowerCase().includes(search)) &&
+    (!date || x.date === date)
+  );
+
+  $("attendanceTable").innerHTML = data.length
+    ? data.map((x,i) => `
+      <tr>
+        <td>${i+1}</td>
+        <td>${safe(x.name)}</td>
+        <td>${safe(x.className)}</td>
+        <td>${safe(x.date)}</td>
+        <td><span class="status status-${x.status}">${x.status}</span></td>
+        <td>${safe(x.note || "-")}</td>
+        <td><button class="delete-btn" data-id="${x.id}">Hapus</button></td>
+      </tr>
+    `).join("")
+    : `<tr><td colspan="7">Belum ada data.</td></tr>`;
+}
+
+// TAMBAH ABSENSI
+$("attendanceForm").addEventListener("submit", e => {
+  e.preventDefault();
+
+  attendance.unshift({
+    id: Date.now().toString(),
+    name: $("studentName").value.trim(),
+    className: $("studentClass").value.trim(),
+    date: $("attendanceDate").value,
+    status: $("attendanceStatus").value,
+    note: $("attendanceNote").value.trim()
+  });
+
+  saveData();
+  renderAttendance();
+  updateStats();
+
+  e.target.reset();
+  $("attendanceDate").value = today;
+});
+
+// HAPUS ABSENSI
+$("attendanceTable").addEventListener("click", e => {
+  const id = e.target.dataset.id;
+
+  if(id && confirm("Hapus data absensi?")) {
+    attendance = attendance.filter(x => x.id !== id);
+    saveData();
+    renderAttendance();
+    updateStats();
+  }
+});
+
+// SEARCH
+$("searchAttendance").addEventListener("input",renderAttendance);
+$("filterDate").addEventListener("change",renderAttendance);
+
+$("clearDate").addEventListener("click",()=>{
+  $("filterDate").value="";
+  renderAttendance();
+});
+
+// TAB
+document.querySelectorAll(".tab").forEach(tab=>{
+  tab.addEventListener("click",()=>{
+    document.querySelectorAll(".tab").forEach(t=>
+      t.classList.toggle("active",t===tab)
+    );
+
+    $("absensi").classList.toggle("hidden",tab.dataset.tab!=="absensi");
+    $("praktikum").classList.toggle("hidden",tab.dataset.tab!=="praktikum");
+  });
+});
+
+/* =========================
+   TANDA TANGAN DIGITAL
+========================= */
+
+const canvas = $("signatureCanvas");
 const ctx = canvas.getContext("2d");
 
-const hapusTTD = document.getElementById("hapusTTD");
-const daftarPresensi = document.getElementById("daftarPresensi");
-const pencarian = document.getElementById("pencarian");
-const jumlahPeserta = document.getElementById("jumlahPeserta");
+let drawing = false;
+let signed = false;
 
-const STORAGE_KEY = "dataPresensiWebinar";
-let sedangMenggambar = false;
-let sudahTandaTangan = false;
+function resizeCanvas() {
+  const rect = canvas.getBoundingClientRect();
 
-// Mengatur tanggal hari ini
-function tanggalHariIni() {
-    const sekarang = new Date();
-    const tahun = sekarang.getFullYear();
-    const bulan = String(sekarang.getMonth() + 1).padStart(2, "0");
-    const hari = String(sekarang.getDate()).padStart(2, "0");
+  if (rect.width === 0 || rect.height === 0) return;
 
-    return `${tahun}-${bulan}-${hari}`;
-}
+  const dpr = window.devicePixelRatio || 1;
 
-tanggal.value = tanggalHariIni();
+  // Simpan gambar lama jika sudah ada
+  const oldImage = signed ? canvas.toDataURL("image/png") : null;
 
-// Mengatur ukuran area tanda tangan
-function aturCanvas() {
-    const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
 
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = "#172554";
 
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.lineWidth = 2.5;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.strokeStyle = "#222";
-}
+  // Kembalikan gambar lama
+  if (oldImage) {
+    const img = new Image();
 
-aturCanvas();
-
-function posisiPointer(event) {
-    const rect = canvas.getBoundingClientRect();
-
-    return {
-        x: event.clientX - rect.left,
-        y: event.clientY - rect.top
-    };
-}
-
-// Mulai menggambar tanda tangan
-canvas.addEventListener("pointerdown", function(event) {
-    event.preventDefault();
-    sedangMenggambar = true;
-
-    const posisi = posisiPointer(event);
-
-    ctx.beginPath();
-    ctx.moveTo(posisi.x, posisi.y);
-    ctx.lineTo(posisi.x + 0.1, posisi.y + 0.1);
-    ctx.stroke();
-
-    sudahTandaTangan = true;
-    canvas.setPointerCapture(event.pointerId);
-});
-
-// Menggambar garis tanda tangan
-canvas.addEventListener("pointermove", function(event) {
-    if (!sedangMenggambar) return;
-
-    event.preventDefault();
-
-    const posisi = posisiPointer(event);
-    ctx.lineTo(posisi.x, posisi.y);
-    ctx.stroke();
-
-    sudahTandaTangan = true;
-});
-
-// Berhenti menggambar
-function berhentiMenggambar() {
-    sedangMenggambar = false;
-    ctx.beginPath();
-}
-
-canvas.addEventListener("pointerup", berhentiMenggambar);
-canvas.addEventListener("pointercancel", berhentiMenggambar);
-canvas.addEventListener("lostpointercapture", berhentiMenggambar);
-
-// Menghapus tanda tangan
-hapusTTD.addEventListener("click", function() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    sudahTandaTangan = false;
-    ctx.beginPath();
-});
-
-// Mengambil data dari LocalStorage
-function ambilData() {
-    try {
-        const data = JSON.parse(
-            localStorage.getItem(STORAGE_KEY) || "[]"
-        );
-
-        return Array.isArray(data) ? data : [];
-    } catch {
-        return [];
-    }
-}
-
-// Menyimpan data presensi
-form.addEventListener("submit", function(event) {
-    event.preventDefault();
-
-    if (!sudahTandaTangan) {
-        alert("Silakan bubuhkan tanda tangan terlebih dahulu.");
-        return;
-    }
-
-    const data = ambilData();
-
-    const peserta = {
-        id: Date.now().toString() + Math.random().toString(16).slice(2),
-        namaWebinar: namaWebinar.value.trim(),
-        tanggal: tanggal.value,
-        nama: nama.value.trim(),
-        sekolah: sekolah.value.trim(),
-        tandaTangan: canvas.toDataURL("image/png")
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, rect.width, rect.height);
     };
 
-    data.push(peserta);
+    img.src = oldImage;
+  }
+}
 
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch {
-        alert("Data gagal disimpan. Penyimpanan browser mungkin penuh.");
-        return;
-    }
+function getPosition(e) {
+  const rect = canvas.getBoundingClientRect();
 
-    alert("Presensi berhasil disimpan!");
+  return {
+    x: e.clientX - rect.left,
+    y: e.clientY - rect.top
+  };
+}
 
-    form.reset();
-    tanggal.value = tanggalHariIni();
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    sudahTandaTangan = false;
+// MULAI TANDA TANGAN
+canvas.addEventListener("pointerdown", e => {
+  e.preventDefault();
 
-    tampilkanPresensi();
+  drawing = true;
+  signed = true;
+
+  canvas.setPointerCapture(e.pointerId);
+
+  const p = getPosition(e);
+
+  ctx.beginPath();
+  ctx.moveTo(p.x, p.y);
 });
 
-// Membuat elemen tabel dengan aman
-function buatSel(teks) {
-    const td = document.createElement("td");
-    td.textContent = teks;
-    return td;
+// GAMBAR TANDA TANGAN
+canvas.addEventListener("pointermove", e => {
+  if (!drawing) return;
+
+  e.preventDefault();
+
+  const p = getPosition(e);
+
+  ctx.lineTo(p.x, p.y);
+  ctx.stroke();
+});
+
+// SELESAI TANDA TANGAN
+canvas.addEventListener("pointerup", e => {
+  drawing = false;
+
+  if (canvas.hasPointerCapture(e.pointerId)) {
+    canvas.releasePointerCapture(e.pointerId);
+  }
+});
+
+canvas.addEventListener("pointercancel", () => {
+  drawing = false;
+});
+
+// HAPUS TTD
+function clearSignature() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  signed = false;
 }
 
-// Menampilkan daftar peserta
-function tampilkanPresensi() {
-    const data = ambilData();
-    const kataKunci = pencarian.value.trim().toLowerCase();
+$("clearSignature").addEventListener("click", clearSignature);
 
-    const hasil = data.filter(function(peserta) {
-        return (
-            peserta.nama.toLowerCase().includes(kataKunci) ||
-            peserta.sekolah.toLowerCase().includes(kataKunci)
-        );
-    });
+// Resize layar
+window.addEventListener("resize", resizeCanvas);
 
-    daftarPresensi.replaceChildren();
+// Saat tab praktikum dibuka
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    if (tab.dataset.tab === "praktikum") {
+      setTimeout(resizeCanvas, 100);
+    }
+  });
+});
 
-    hasil.forEach(function(peserta, index) {
-        const baris = document.createElement("tr");
+setTimeout(resizeCanvas, 300);
 
-        baris.appendChild(buatSel(index + 1));
-        baris.appendChild(buatSel(peserta.nama));
-        baris.appendChild(buatSel(peserta.sekolah));
-        baris.appendChild(buatSel(peserta.tanggal));
+// SIMPAN PRAKTIKUM
+$("praktikumForm").addEventListener("submit",e=>{
+  e.preventDefault();
 
-        const selTTD = document.createElement("td");
-        const gambar = document.createElement("img");
+  if(!signed){
+    alert("Silakan isi tanda tangan terlebih dahulu!");
+    return;
+  }
 
-        gambar.src = peserta.tandaTangan;
-        gambar.alt = "Tanda tangan " + peserta.nama;
-        gambar.className = "signature-image";
+  praktikum.unshift({
+    id:Date.now().toString(),
+    name:$("praktikumName").value.trim(),
+    className:$("praktikumClass").value.trim(),
+    mapel:$("praktikumMapel").value.trim(),
+    title:$("praktikumTitle").value.trim(),
+    date:$("praktikumDate").value,
+    status:$("praktikumStatus").value,
+    signature:canvas.toDataURL("image/png")
+  });
 
-        selTTD.appendChild(gambar);
-        baris.appendChild(selTTD);
+  saveData();
+  renderPraktikum();
 
-        const selAksi = document.createElement("td");
-        const tombolHapus = document.createElement("button");
+  e.target.reset();
+  $("praktikumDate").value=today;
+  clearSignature();
+});
 
-        tombolHapus.textContent = "Hapus";
-        tombolHapus.className = "btn-delete";
+// TAMPILKAN PRAKTIKUM
+function renderPraktikum(){
+  const search=$("searchPraktikum").value.toLowerCase();
 
-        tombolHapus.addEventListener("click", function() {
-            const yakin = confirm(
-                "Hapus presensi " + peserta.nama + "?"
-            );
+  const data=praktikum.filter(x=>
+    x.name.toLowerCase().includes(search) ||
+    x.title.toLowerCase().includes(search) ||
+    x.mapel.toLowerCase().includes(search)
+  );
 
-            if (!yakin) return;
-
-            const dataTerbaru = ambilData().filter(function(item) {
-                return item.id !== peserta.id;
-            });
-
-            localStorage.setItem(
-                STORAGE_KEY,
-                JSON.stringify(dataTerbaru)
-            );
-
-            tampilkanPresensi();
-        });
-
-        selAksi.appendChild(tombolHapus);
-        baris.appendChild(selAksi);
-
-        daftarPresensi.appendChild(baris);
-    });
-
-    jumlahPeserta.textContent =
-        "Total peserta: " + data.length;
+  $("praktikumTable").innerHTML=data.length
+    ?data.map((x,i)=>`
+      <tr>
+        <td>${i+1}</td>
+        <td>${safe(x.name)}</td>
+        <td>${safe(x.className)}</td>
+        <td>${safe(x.mapel)}</td>
+        <td>${safe(x.title)}</td>
+        <td>${safe(x.date)}</td>
+        <td><span class="status status-${x.status}">${x.status}</span></td>
+        <td><img class="webinar-sign" src="${x.signature}"></td>
+        <td><button class="delete-btn" data-id="${x.id}">Hapus</button></td>
+      </tr>
+    `).join("")
+    :`<tr><td colspan="9">Belum ada data praktikum.</td></tr>`;
 }
 
-// Fitur pencarian
-pencarian.addEventListener("input", tampilkanPresensi);
+// HAPUS PRAKTIKUM
+$("praktikumTable").addEventListener("click",e=>{
+  const id=e.target.dataset.id;
 
-// Menampilkan data yang sudah tersimpan saat halaman dibuka
-tampilkanPresensi();
+  if(id && confirm("Hapus data praktikum?")){
+    praktikum=praktikum.filter(x=>x.id!==id);
+    saveData();
+    renderPraktikum();
+  }
+});
+
+$("searchPraktikum").addEventListener("input",renderPraktikum);
+
+// EXPORT EXCEL
+function exportExcel(data,filename){
+  if(!data.length){
+    alert("Tidak ada data untuk diekspor!");
+    return;
+  }
+
+  const ws=XLSX.utils.json_to_sheet(data);
+  const wb=XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(wb,ws,"Data");
+  XLSX.writeFile(wb,filename);
+}
+
+$("exportAttendanceExcel").addEventListener("click",()=>{
+  exportExcel(attendance.map((x,i)=>({
+    No:i+1,
+    "Nama Siswa":x.name,
+    Kelas:x.className,
+    Tanggal:x.date,
+    Status:x.status,
+    Keterangan:x.note
+  })),"Absensi_Siswa.xlsx");
+});
+
+$("exportPraktikumExcel").addEventListener("click",()=>{
+  exportExcel(praktikum.map((x,i)=>({
+    No:i+1,
+    "Nama Siswa":x.name,
+    Kelas:x.className,
+    "Mata Pelajaran":x.mapel,
+    Praktikum:x.title,
+    Tanggal:x.date,
+    Status:x.status,
+    TTD:"Tersimpan"
+  })),"Presensi_Praktikum.xlsx");
+});
+
+// EXPORT PDF
+function exportPDF(title,headers,rows,filename){
+  if(!rows.length){
+    alert("Tidak ada data untuk diekspor!");
+    return;
+  }
+
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF("landscape");
+
+  doc.setFontSize(16);
+  doc.text(title,14,16);
+
+  doc.autoTable({
+    head:[headers],
+    body:rows,
+    startY:25,
+    styles:{fontSize:8},
+    headStyles:{fillColor:[79,70,229]}
+  });
+
+  doc.save(filename);
+}
+
+$("exportAttendancePdf").addEventListener("click",()=>{
+  exportPDF(
+    "Rekap Absensi Harian",
+    ["No","Nama Siswa","Kelas","Tanggal","Status","Keterangan"],
+    attendance.map((x,i)=>[
+      i+1,x.name,x.className,x.date,x.status,x.note||"-"
+    ]),
+    "Absensi_Siswa.pdf"
+  );
+});
+
+$("exportPraktikumPdf").addEventListener("click",()=>{
+  exportPDF(
+    "Rekap Presensi Praktikum",
+    ["No","Nama Siswa","Kelas","Mapel","Praktikum","Tanggal","Status","TTD"],
+    praktikum.map((x,i)=>[
+      i+1,x.name,x.className,x.mapel,x.title,
+      x.date,x.status,x.signature?"Ada":"-"
+    ]),
+    "Presensi_Praktikum.pdf"
+  );
+});
+
+// JALANKAN
+renderAttendance();
+renderPraktikum();
+updateStats();
